@@ -48,6 +48,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   // Generate round when component mounts or mode/currency changes
   useEffect(() => {
+    if (mode !== 'Mixed Mode') {
+      setCurrentMode(mode)
+    }
     generateNewRound()
   }, [mode, currency, targetCurrency])
 
@@ -93,19 +96,37 @@ const GameScreen: React.FC<GameScreenProps> = ({
     }
 
     let newRound: TotalCountRound | GiveChangeRound | CurrencyConvertRound
-    if (newMode === 'Total Count') {
-      newRound = generateTotalCountRound(currency)
-    } else if (newMode === 'Give Change') {
-      newRound = generateGiveChangeRound(currency)
-    } else {
-      newRound = generateCurrencyConvertRound(currency, targetCurrency!)
+    try {
+      if (newMode === 'Total Count') {
+        newRound = generateTotalCountRound(currency)
+      } else if (newMode === 'Give Change') {
+        newRound = generateGiveChangeRound(currency)
+      } else {
+        if (!targetCurrency) {
+          throw new Error('Target currency is required for currency conversion')
+        }
+        newRound = generateCurrencyConvertRound(currency, targetCurrency)
+      }
+      
+      // Validate the round data
+      if (newMode === 'Total Count' && (!newRound || !(newRound as TotalCountRound).items)) {
+        throw new Error('Invalid Total Count round data')
+      } else if (newMode === 'Give Change' && (!newRound || !(newRound as GiveChangeRound).price || !(newRound as GiveChangeRound).givenAmount)) {
+        throw new Error('Invalid Give Change round data')
+      } else if (newMode === 'Currency Convert' && (!newRound || !(newRound as CurrencyConvertRound).sourceAmount || !(newRound as CurrencyConvertRound).targetCurrency)) {
+        throw new Error('Invalid Currency Convert round data')
+      }
+
+      setRound(newRound)
+      setUserAnswer('')
+      setTimeLeft(timerDuration)
+      setIsGameOver(false)
+      setIsCorrect(null)
+    } catch (error) {
+      console.error('Error generating round:', error)
+      // Retry generating the round
+      setTimeout(generateNewRound, 0)
     }
-    
-    setRound(newRound)
-    setUserAnswer('')
-    setTimeLeft(timerDuration)
-    setIsGameOver(false)
-    setIsCorrect(null)
   }, [mode, currency, targetCurrency, timerDuration])
 
   const handleSubmit = () => {
@@ -138,12 +159,53 @@ const GameScreen: React.FC<GameScreenProps> = ({
     }
   }
 
+  const handleKeyPress = (value: string) => {
+    if (isGameOver) return
+    
+    if (value === 'clear') {
+      setUserAnswer('')
+    } else if (value === 'backspace') {
+      setUserAnswer(prev => prev.slice(0, -1))
+    } else {
+      setUserAnswer(prev => prev + value)
+    }
+  }
+
+  const renderNumericKeypad = () => {
+    const keys = [
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+      ['clear', '0', 'backspace']
+    ]
+
+    return (
+      <div className="grid grid-cols-3 gap-1.5 mt-2 w-full">
+        {keys.flat().map((key) => (
+          <button
+            key={key}
+            onClick={() => handleKeyPress(key)}
+            disabled={isGameOver}
+            className={`h-10 flex items-center justify-center rounded-lg text-base font-medium transition-colors
+              ${isGameOver 
+                ? 'bg-dark-600 text-dark-800 cursor-not-allowed' 
+                : 'bg-dark-500 text-dark-900 hover:bg-dark-600'
+              }`}
+          >
+            {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   const renderRoundDetails = () => {
     if (!round) return null
 
     switch (currentMode) {
       case 'Total Count':
         const totalCountRound = round as TotalCountRound
+        if (!totalCountRound?.items) return null
         return (
           <div className="grid grid-cols-3 gap-2 mb-3">
             {totalCountRound.items.map((item, index) => (
@@ -158,6 +220,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         )
       case 'Give Change':
         const giveChangeRound = round as GiveChangeRound
+        if (!giveChangeRound?.price || !giveChangeRound?.givenAmount) return null
         return (
           <div className="mb-3 text-center">
             <p className="text-base">
@@ -170,6 +233,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         )
       case 'Currency Convert':
         const currencyConvertRound = round as CurrencyConvertRound
+        if (!currencyConvertRound?.sourceAmount || !currencyConvertRound?.targetCurrency) return null
         return (
           <div className="mb-3 text-center">
             <p className="text-base flex items-center justify-center">
@@ -251,33 +315,25 @@ const GameScreen: React.FC<GameScreenProps> = ({
         
         {renderRoundDetails()}
 
-        <div className="flex">
-          <input 
-            type="number" 
-            value={userAnswer}
-            onChange={(e) => setUserAnswer(e.target.value)}
-            placeholder={
-              currentMode === 'Total Count' 
-                ? 'Total amount' 
-                : currentMode === 'Give Change' 
-                  ? 'Change amount' 
-                  : 'Converted amount'
-            }
-            className="flex-grow px-3 py-2 bg-dark-500 border border-dark-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-brand-50 text-dark-900 text-sm"
-            disabled={isGameOver}
-          />
-          <button 
-            onClick={handleSubmit}
-            disabled={isGameOver}
-            className={`px-3 py-2 rounded-r-lg transition-colors text-sm
-              ${isGameOver 
-                ? 'bg-dark-600 text-dark-800 cursor-not-allowed' 
-                : 'bg-brand-50 text-white hover:bg-brand-100'
-              }`}
-          >
-            Submit
-          </button>
+        <div className="bg-dark-500 rounded-lg p-3 mb-3">
+          <div className="text-right text-2xl font-bold text-dark-900 min-h-[2rem]">
+            {userAnswer || '0'}
+          </div>
         </div>
+
+        {renderNumericKeypad()}
+
+        <button 
+          onClick={handleSubmit}
+          disabled={isGameOver}
+          className={`w-full mt-3 py-2 rounded-lg transition-colors text-sm
+            ${isGameOver 
+              ? 'bg-dark-600 text-dark-800 cursor-not-allowed' 
+              : 'bg-brand-50 text-white hover:bg-brand-100'
+            }`}
+        >
+          Submit
+        </button>
 
         {renderResult()}
       </div>

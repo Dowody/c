@@ -1,29 +1,28 @@
 import { CurrencyType } from '../types/Currency'
 
-interface HighScore {
+export interface HighScore {
   accuracy: number
   correctRounds: number
-  date: string
+  totalRounds: number
 }
 
-export function saveHighScore(currency: CurrencyType, accuracy: number, correctRounds: number) {
-  const highScores = JSON.parse(localStorage.getItem('moneyGameHighScores') || '{}')
+const HIGH_SCORES_KEY = 'moneyGameHighScores'
+
+export const getHighScore = (currency: string): HighScore | null => {
+  const scores = localStorage.getItem(HIGH_SCORES_KEY)
+  if (!scores) return null
   
-  const newScore: HighScore = {
-    accuracy,
-    correctRounds,
-    date: new Date().toISOString()
-  }
-
-  // Compare and update high score if new score is better
-  const currentHighScore = highScores[currency]
-  if (!currentHighScore || accuracy > currentHighScore.accuracy) {
-    highScores[currency] = newScore
-    localStorage.setItem('moneyGameHighScores', JSON.stringify(highScores))
-  }
+  const parsedScores = JSON.parse(scores)
+  return parsedScores[currency] || null
 }
 
-export function getHighScore(currency: CurrencyType): HighScore | null {
-  const highScores = JSON.parse(localStorage.getItem('moneyGameHighScores') || '{}')
-  return highScores[currency] || null
+export const saveHighScore = (currency: string, score: HighScore) => {
+  const scores = localStorage.getItem(HIGH_SCORES_KEY)
+  const parsedScores = scores ? JSON.parse(scores) : {}
+  
+  const currentHighScore = parsedScores[currency]
+  if (!currentHighScore || score.accuracy > currentHighScore.accuracy) {
+    parsedScores[currency] = score
+    localStorage.setItem(HIGH_SCORES_KEY, JSON.stringify(parsedScores))
+  }
 }

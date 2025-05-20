@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { CurrencyType } from '../types/Currency'
 import { GameSettings, GameMode } from '../types/GameTypes'
-import { Coins, DollarSign, Euro, GamepadIcon, Trophy, Clock, ArrowLeftRight, Shuffle } from 'lucide-react'
+import { Coins, DollarSign, Euro, Banknote, Trophy, Clock, ArrowLeftRight, Shuffle, BarChart2 } from 'lucide-react'
 import { getHighScore } from '../utils/highScoreUtils'
 
 interface HomeScreenProps {
@@ -12,9 +12,10 @@ interface HomeScreenProps {
     targetCurrency?: CurrencyType
   ) => void
   defaultSettings: GameSettings
+  onShowStats: () => void
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, onShowStats }) => {
   const [selectedMode, setSelectedMode] = useState<GameMode | null>(null)
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType | null>(null)
   const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(null)
@@ -22,7 +23,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings })
 
   const gameModes: { name: GameMode, icon: React.ElementType }[] = [
     { name: 'Total Count', icon: Coins },
-    { name: 'Give Change', icon: GamepadIcon },
+    { name: 'Give Change', icon: Banknote },
     { name: 'Currency Convert', icon: ArrowLeftRight },
     { name: 'Mixed Mode', icon: Shuffle }
   ]
@@ -43,9 +44,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings })
     if (!highScore) return null
 
     return (
-      <div className="absolute bottom-0 right-0 p-1 bg-dark-500 rounded-bl-lg flex items-center">
-        <Trophy className="w-4 h-4 mr-1 text-brand-50" />
-        <span className="text-xs text-dark-900">
+      <div className="absolute top-1 right-1 bg-dark-500/90 rounded-full px-1.5 py-0.5 flex items-center">
+        <Trophy className="w-2.5 h-2.5 text-brand-50" />
+        <span className="text-[10px] ml-0.5 text-dark-900">
           {(highScore.accuracy * 100).toFixed(0)}%
         </span>
       </div>
@@ -54,7 +55,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings })
 
   return (
     <div className="bg-dark-400 shadow-modern rounded-large p-6 space-y-4 border border-dark-600">
-      {/* <h1 className="text-2xl font-bold text-center text-brand-50 mb-4">Money Counter</h1> */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-lg font-semibold text-dark-900">Money Counter</h1>
+        <button
+          onClick={onShowStats}
+          className="p-2 rounded-lg bg-dark-500 text-dark-900 hover:bg-dark-600 transition-colors"
+        >
+          <BarChart2 className="w-5 h-5" />
+        </button>
+      </div>
 
       <div>
         <h2 className="text-lg font-semibold mb-3 text-dark-900">Select Game Mode</h2>
@@ -107,7 +116,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings })
             >
               <Icon className="w-4 h-4 mr-1" />
               <span className="text-xs">{name}</span>
-              {renderHighScore(name)}
             </button>
           ))}
         </div>

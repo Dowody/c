@@ -1,20 +1,22 @@
 import React, { useState } from 'react'
 import { CurrencyType } from './types/Currency'
-import { GameResults, GameSettings, DEFAULT_GAME_SETTINGS } from './types/GameTypes'
+import { GameResults, GameSettings, DEFAULT_GAME_SETTINGS, GameMode } from './types/GameTypes'
 import HomeScreen from './components/HomeScreen'
 import GameScreen from './components/GameScreen'
 import ResultScreen from './components/ResultScreen'
+import StatsScreen from './components/StatsScreen'
 
 function App() {
-  const [gameMode, setGameMode] = useState<'Total Count' | 'Give Change' | 'Currency Convert' | null>(null)
+  const [gameMode, setGameMode] = useState<GameMode | null>(null)
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType | null>(null)
   const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(null)
   const [gameStarted, setGameStarted] = useState(false)
   const [gameResults, setGameResults] = useState<GameResults | null>(null)
   const [gameSettings, setGameSettings] = useState<GameSettings>(DEFAULT_GAME_SETTINGS)
+  const [showStats, setShowStats] = useState(false)
 
   const handleStartGame = (
-    mode: 'Total Count' | 'Give Change' | 'Currency Convert', 
+    mode: GameMode, 
     currency: CurrencyType, 
     settings?: Partial<GameSettings>,
     targetCurrency?: CurrencyType
@@ -45,6 +47,16 @@ function App() {
     setGameResults(results)
   }
 
+  if (showStats) {
+    return (
+      <div className="min-h-screen bg-dark-300 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <StatsScreen onBack={() => setShowStats(false)} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-dark-300 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -58,6 +70,7 @@ function App() {
           <HomeScreen 
             onStartGame={handleStartGame} 
             defaultSettings={gameSettings}
+            onShowStats={() => setShowStats(true)}
           />
         ) : (
           <GameScreen 
