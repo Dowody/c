@@ -126,23 +126,25 @@ const GameScreen: React.FC<GameScreenProps> = ({
     let correct = false
     let correctAnswer = 0
 
+    // Convert user answer from comma format to number
+    const userAnswerNumber = Number(userAnswer.replace(',', '.'))
+
     switch (currentMode) {
       case 'Total Count':
         const totalCountRound = round as TotalCountRound
         correctAnswer = totalCountRound.total
-        correct = Number(userAnswer) === correctAnswer
+        correct = userAnswerNumber === correctAnswer
         break
       case 'Give Change':
         const giveChangeRound = round as GiveChangeRound
         correctAnswer = giveChangeRound.correctChange
-        correct = Number(userAnswer) === correctAnswer
+        correct = userAnswerNumber === correctAnswer
         break
       case 'Currency Convert':
         const currencyConvertRound = round as CurrencyConvertRound
         correctAnswer = currencyConvertRound.convertedAmount
-        const userAmount = Number(userAnswer)
         const errorMargin = correctAnswer * 0.01 // 1% error margin
-        correct = Math.abs(userAmount - correctAnswer) <= errorMargin
+        correct = Math.abs(userAnswerNumber - correctAnswer) <= errorMargin
         break
     }
 
@@ -158,7 +160,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       roundNumber,
       correct,
       timeSpent,
-      userAnswer: Number(userAnswer),
+      userAnswer: userAnswerNumber,
       correctAnswer
     }])
   }
@@ -194,10 +196,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const handleKeyPress = (value: string) => {
     if (isGameOver) return
     
-    if (value === 'clear') {
-      setUserAnswer('')
-    } else if (value === 'backspace') {
+    if (value === 'backspace') {
       setUserAnswer(prev => prev.slice(0, -1))
+    } else if (value === ',') {
+      // Only add comma if there isn't already one
+      if (!userAnswer.includes(',')) {
+        setUserAnswer(prev => prev + ',')
+      }
     } else {
       setUserAnswer(prev => prev + value)
     }
@@ -208,7 +213,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['clear', '0', 'backspace']
+      [',', '0', 'backspace']
     ]
 
     return (
@@ -224,7 +229,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
                 : 'bg-dark-500 text-dark-900 hover:bg-dark-600'
               }`}
           >
-            {key === 'backspace' ? '⌫' : key === 'clear' ? 'C' : key}
+            {key === 'backspace' ? '⌫' : key}
           </button>
         ))}
       </div>
@@ -254,13 +259,19 @@ const GameScreen: React.FC<GameScreenProps> = ({
         const giveChangeRound = round as GiveChangeRound
         if (!giveChangeRound?.price || !giveChangeRound?.givenAmount) return null
         return (
-          <div className="mb-3 text-center">
-            <p className="text-base">
-              Price: {formatMoney(giveChangeRound.price, currency)}
-            </p>
-            <p className="text-base">
-              Given: {formatMoney(giveChangeRound.givenAmount, currency)}
-            </p>
+          <div className="mb-3 space-y-3">
+            <div className="bg-dark-500 rounded-lg p-3 border border-dark-600">
+              <p className="text-xs text-dark-800 mb-1">Price</p>
+              <p className="text-lg font-semibold text-dark-900">
+                {formatMoney(giveChangeRound.price, currency)}
+              </p>
+            </div>
+            <div className="bg-dark-500 rounded-lg p-3 border border-dark-600">
+              <p className="text-xs text-dark-800 mb-1">Given Amount</p>
+              <p className="text-lg font-semibold text-dark-900">
+                {formatMoney(giveChangeRound.givenAmount, currency)}
+              </p>
+            </div>
           </div>
         )
       case 'Currency Convert':
@@ -348,8 +359,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
         {renderRoundDetails()}
 
         <div className="bg-dark-500 rounded-lg p-3 mb-3">
-          <div className="text-right text-2xl font-bold text-dark-900 min-h-[2rem]">
-            {userAnswer || '0'}
+          <div className="text-right text-2xl font-bold text-dark-900 min-h-[2rem] flex items-center justify-end">
+            <span>{userAnswer || '0'}</span>
+            <span className="ml-2 text-base text-dark-800">
+              {currentMode === 'Currency Convert' 
+                ? (round as CurrencyConvertRound).targetCurrency 
+                : currency}
+            </span>
           </div>
         </div>
 
