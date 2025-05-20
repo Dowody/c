@@ -1,19 +1,22 @@
 import React, { useState } from 'react'
 import { CurrencyType } from './types/Currency'
-import { GameResults, GameSettings, DEFAULT_GAME_SETTINGS, GameMode } from './types/GameTypes'
+import { GameMode, GameSettings, GameLevel } from './types/GameTypes'
 import HomeScreen from './components/HomeScreen'
 import GameScreen from './components/GameScreen'
 import ResultScreen from './components/ResultScreen'
 import StatsScreen from './components/StatsScreen'
 
 function App() {
-  const [gameMode, setGameMode] = useState<GameMode | null>(null)
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'game' | 'stats'>('home')
+  const [selectedMode, setSelectedMode] = useState<GameMode | null>(null)
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType | null>(null)
   const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(null)
   const [gameStarted, setGameStarted] = useState(false)
-  const [gameResults, setGameResults] = useState<GameResults | null>(null)
-  const [gameSettings, setGameSettings] = useState<GameSettings>(DEFAULT_GAME_SETTINGS)
-  const [showStats, setShowStats] = useState(false)
+  const [gameResults, setGameResults] = useState<any | null>(null)
+  const [gameSettings, setGameSettings] = useState<GameSettings>({
+    timerDuration: 10,
+    level: 'Easy'
+  })
 
   const handleStartGame = (
     mode: GameMode, 
@@ -21,37 +24,48 @@ function App() {
     settings?: Partial<GameSettings>,
     targetCurrency?: CurrencyType
   ) => {
-    setGameMode(mode)
+    setSelectedMode(mode)
     setSelectedCurrency(currency)
     setTargetCurrency(targetCurrency || null)
-    setGameStarted(true)
-    setGameResults(null)
-    
-    // Merge default settings with any provided settings
-    if (settings) {
-      setGameSettings(prev => ({...prev, ...settings}))
+    const newSettings = {
+      ...gameSettings,
+      ...settings,
+      mode,
+      currency,
+      targetCurrency
     }
+    setGameSettings(newSettings)
+    setCurrentScreen('game')
+  }
+
+  const handleGameComplete = (results: any) => {
+    setGameStarted(false)
+    setGameResults(results)
+    setCurrentScreen('home')
+  }
+
+  const handleShowStats = () => {
+    setCurrentScreen('stats')
   }
 
   const handleResetGame = () => {
+    setCurrentScreen('home')
     setGameStarted(false)
-    setGameMode(null)
+    setSelectedMode(null)
     setSelectedCurrency(null)
     setTargetCurrency(null)
     setGameResults(null)
-    setGameSettings(DEFAULT_GAME_SETTINGS)
+    setGameSettings({
+      timerDuration: 10,
+      level: 'Easy'
+    })
   }
 
-  const handleGameResults = (results: GameResults) => {
-    setGameStarted(false)
-    setGameResults(results)
-  }
-
-  if (showStats) {
+  if (currentScreen === 'stats') {
     return (
       <div className="min-h-screen bg-dark-300 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <StatsScreen onBack={() => setShowStats(false)} />
+          <StatsScreen onBack={handleResetGame} />
         </div>
       </div>
     )
@@ -60,26 +74,29 @@ function App() {
   return (
     <div className="min-h-screen bg-dark-300 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {gameResults ? (
+        {currentScreen === 'home' && (
+          <HomeScreen
+            onStartGame={handleStartGame}
+            defaultSettings={gameSettings}
+            onShowStats={handleShowStats}
+          />
+        )}
+        {currentScreen === 'game' && selectedMode && selectedCurrency && (
+          <GameScreen
+            mode={selectedMode}
+            currency={selectedCurrency}
+            targetCurrency={targetCurrency}
+            onResetGame={handleResetGame}
+            onGameComplete={handleGameComplete}
+            timerDuration={gameSettings.timerDuration}
+            level={gameSettings.level}
+          />
+        )}
+        {gameResults && (
           <ResultScreen 
             results={gameResults} 
             currency={selectedCurrency!} 
             onRestart={handleResetGame} 
-          />
-        ) : !gameStarted ? (
-          <HomeScreen 
-            onStartGame={handleStartGame} 
-            defaultSettings={gameSettings}
-            onShowStats={() => setShowStats(true)}
-          />
-        ) : (
-          <GameScreen 
-            mode={gameMode!} 
-            currency={selectedCurrency!} 
-            targetCurrency={targetCurrency}
-            onResetGame={handleResetGame}
-            onGameComplete={handleGameResults}
-            timerDuration={gameSettings.timerDuration}
           />
         )}
       </div>

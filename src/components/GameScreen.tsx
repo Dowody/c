@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, Clock, ArrowLeftRight } from 'lucide-react'
 import { CurrencyType } from '../types/Currency'
-import { GameResults, GameMode } from '../types/GameTypes'
+import { GameResults, GameMode, GameLevel } from '../types/GameTypes'
 import { 
   generateTotalCountRound, 
   generateGiveChangeRound, 
@@ -21,6 +21,7 @@ interface GameScreenProps {
   onResetGame: () => void
   onGameComplete: (results: GameResults) => void
   timerDuration: number
+  level: GameLevel
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ 
@@ -29,7 +30,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   targetCurrency,
   onResetGame, 
   onGameComplete,
-  timerDuration
+  timerDuration,
+  level
 }) => {
   const [round, setRound] = useState<TotalCountRound | GiveChangeRound | CurrencyConvertRound | null>(null)
   const [userAnswer, setUserAnswer] = useState('')
@@ -98,14 +100,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
     let newRound: TotalCountRound | GiveChangeRound | CurrencyConvertRound
     try {
       if (newMode === 'Total Count') {
-        newRound = generateTotalCountRound(currency)
+        newRound = generateTotalCountRound(currency, level)
       } else if (newMode === 'Give Change') {
-        newRound = generateGiveChangeRound(currency)
+        newRound = generateGiveChangeRound(currency, level)
       } else {
         if (!targetCurrency) {
           throw new Error('Target currency is required for currency conversion')
         }
-        newRound = generateCurrencyConvertRound(currency, targetCurrency)
+        newRound = generateCurrencyConvertRound(currency, targetCurrency, level)
       }
       
       // Validate the round data
@@ -127,7 +129,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       // Retry generating the round
       setTimeout(generateNewRound, 0)
     }
-  }, [mode, currency, targetCurrency, timerDuration])
+  }, [mode, currency, targetCurrency, timerDuration, level])
 
   const handleSubmit = () => {
     if (!round) return

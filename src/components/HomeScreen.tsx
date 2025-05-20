@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { CurrencyType } from '../types/Currency'
-import { GameSettings, GameMode } from '../types/GameTypes'
+import { GameSettings, GameMode, GameLevel } from '../types/GameTypes'
 import { Coins, DollarSign, Euro, Banknote, Trophy, Clock, ArrowLeftRight, Shuffle, BarChart2 } from 'lucide-react'
 import { getHighScore } from '../utils/highScoreUtils'
 
@@ -16,10 +16,11 @@ interface HomeScreenProps {
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, onShowStats }) => {
-  const [selectedMode, setSelectedMode] = useState<GameMode | null>(null)
-  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType | null>(null)
-  const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(null)
+  const [selectedMode, setSelectedMode] = useState<GameMode | null>(defaultSettings.mode || null)
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType | null>(defaultSettings.currency || null)
+  const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(defaultSettings.targetCurrency || null)
   const [timerDuration, setTimerDuration] = useState(defaultSettings.timerDuration)
+  const [selectedLevel, setSelectedLevel] = useState<GameLevel>(defaultSettings.level)
 
   const gameModes: { name: GameMode, icon: React.ElementType }[] = [
     { name: 'Total Count', icon: Coins },
@@ -34,7 +35,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, o
     { name: 'EUR', icon: Euro }
   ]
 
-  const timerOptions = [5, 10, 15, 20]
+  const timerOptions = [5, 10, 15, 30]
+  const levels: { name: GameLevel }[] = [
+    { name: 'Easy' },
+    { name: 'Medium' },
+    { name: 'Hard' }
+  ]
 
   const isStartEnabled = selectedMode && selectedCurrency && 
     (selectedMode !== 'Currency Convert' || targetCurrency)
@@ -122,6 +128,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, o
       </div>
 
       <div>
+        <h2 className="text-lg font-semibold mb-3 text-dark-900">Select Difficulty</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {levels.map(({ name }) => (
+            <button
+              key={name}
+              onClick={() => setSelectedLevel(name)}
+              className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all
+                ${selectedLevel === name
+                  ? 'bg-brand-100 text-white' 
+                  : 'bg-dark-500 text-dark-900 hover:bg-dark-600'
+                }`}
+            >
+              <span className="text-xs font-medium">{name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
         <h2 className="text-lg font-semibold mb-3 text-dark-900 flex items-center">
           <Clock className="w-4 h-4 mr-2 text-brand-50" /> Timer Duration
         </h2>
@@ -146,7 +171,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, o
         onClick={() => isStartEnabled && onStartGame(
           selectedMode!, 
           selectedCurrency!, 
-          { timerDuration },
+          { timerDuration, level: selectedLevel },
           selectedMode === 'Currency Convert' ? targetCurrency! : undefined
         )}
         disabled={!isStartEnabled}

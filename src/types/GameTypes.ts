@@ -31,11 +31,17 @@ export interface GameResults {
 }
 
 export type GameMode = 'Total Count' | 'Give Change' | 'Currency Convert' | 'Mixed Mode'
+export type GameLevel = 'Easy' | 'Medium' | 'Hard'
 
 export interface GameSettings {
   timerDuration: number
+  level: GameLevel
+  mode?: GameMode
+  currency?: CurrencyType
+  targetCurrency?: CurrencyType
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
-  timerDuration: 10
+  timerDuration: 10,
+  level: 'Easy'
 }
