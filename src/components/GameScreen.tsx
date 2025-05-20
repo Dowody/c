@@ -17,7 +17,7 @@ import {
 interface GameScreenProps {
   mode: GameMode
   currency: CurrencyType
-  targetCurrency?: CurrencyType | null
+  targetCurrency?: CurrencyType
   onResetGame: () => void
   onGameComplete: (results: GameResults) => void
   timerDuration: number
@@ -41,6 +41,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [roundNumber, setRoundNumber] = useState(1)
   const [correctRounds, setCorrectRounds] = useState(0)
   const [currentMode, setCurrentMode] = useState<Exclude<GameMode, 'Mixed Mode'>>('Total Count')
+  const [roundStartTime, setRoundStartTime] = useState<number>(Date.now())
+  const [roundDetails, setRoundDetails] = useState<{
+    roundNumber: number
+    correct: boolean
+    timeSpent: number
+    userAnswer: number
+    correctAnswer: number
+  }[]>([])
 
   // Regenerate round when timer duration changes
   useEffect(() => {
@@ -65,27 +73,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
       handleSubmit()
     }
   }, [timeLeft, isGameOver])
-
-  // Auto-move to next round after showing result
-  useEffect(() => {
-    let timer: number
-    if (isGameOver) {
-      if (roundNumber < 10) {
-        timer = setTimeout(() => {
-          generateNewRound()
-          setRoundNumber(prev => prev + 1)
-        }, 2000)
-      } else {
-        // Game completed
-        onGameComplete({
-          totalRounds: 10,
-          correctRounds,
-          accuracy: correctRounds / 10
-        })
-      }
-    }
-    return () => clearTimeout(timer)
-  }, [isGameOver, roundNumber])
 
   const generateNewRound = useCallback(() => {
     let newMode = mode
@@ -124,6 +111,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       setTimeLeft(timerDuration)
       setIsGameOver(false)
       setIsCorrect(null)
+      setRoundStartTime(Date.now())
     } catch (error) {
       console.error('Error generating round:', error)
       // Retry generating the round
@@ -134,22 +122,27 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const handleSubmit = () => {
     if (!round) return
 
+    const timeSpent = timerDuration - timeLeft
     let correct = false
+    let correctAnswer = 0
+
     switch (currentMode) {
       case 'Total Count':
         const totalCountRound = round as TotalCountRound
-        correct = Number(userAnswer) === totalCountRound.total
+        correctAnswer = totalCountRound.total
+        correct = Number(userAnswer) === correctAnswer
         break
       case 'Give Change':
         const giveChangeRound = round as GiveChangeRound
-        correct = Number(userAnswer) === giveChangeRound.correctChange
+        correctAnswer = giveChangeRound.correctChange
+        correct = Number(userAnswer) === correctAnswer
         break
       case 'Currency Convert':
         const currencyConvertRound = round as CurrencyConvertRound
+        correctAnswer = currencyConvertRound.convertedAmount
         const userAmount = Number(userAnswer)
-        const correctAmount = currencyConvertRound.convertedAmount
-        const errorMargin = correctAmount * 0.01 // 1% error margin
-        correct = Math.abs(userAmount - correctAmount) <= errorMargin
+        const errorMargin = correctAnswer * 0.01 // 1% error margin
+        correct = Math.abs(userAmount - correctAnswer) <= errorMargin
         break
     }
 
@@ -159,7 +152,44 @@ const GameScreen: React.FC<GameScreenProps> = ({
     if (correct) {
       setCorrectRounds(prev => prev + 1)
     }
+
+    // Record round details
+    setRoundDetails(prev => [...prev, {
+      roundNumber,
+      correct,
+      timeSpent,
+      userAnswer: Number(userAnswer),
+      correctAnswer
+    }])
   }
+
+  // Auto-move to next round after showing result
+  useEffect(() => {
+    let timer: number
+    if (isGameOver) {
+      if (roundNumber < 10) {
+        timer = setTimeout(() => {
+          generateNewRound()
+          setRoundNumber(prev => prev + 1)
+        }, 2000)
+      } else {
+        // Game completed
+        const averageTime = roundDetails.reduce((sum, round) => sum + round.timeSpent, 0) / roundDetails.length
+        onGameComplete({
+          totalRounds: 10,
+          correctRounds,
+          accuracy: correctRounds / 10,
+          averageTime,
+          mode,
+          level,
+          currency,
+          targetCurrency,
+          roundDetails
+        })
+      }
+    }
+    return () => clearTimeout(timer)
+  }, [isGameOver, roundNumber])
 
   const handleKeyPress = (value: string) => {
     if (isGameOver) return

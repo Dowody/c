@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { CurrencyType } from '../types/Currency'
 import { GameSettings, GameMode, GameLevel } from '../types/GameTypes'
 import { Coins, DollarSign, Euro, Banknote, Trophy, Clock, ArrowLeftRight, Shuffle, BarChart2 } from 'lucide-react'
 import { getHighScore } from '../utils/highScoreUtils'
+
+const SETTINGS_KEY = 'money_counter_settings'
 
 interface HomeScreenProps {
   onStartGame: (
@@ -21,6 +23,31 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, o
   const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(defaultSettings.targetCurrency || null)
   const [timerDuration, setTimerDuration] = useState(defaultSettings.timerDuration)
   const [selectedLevel, setSelectedLevel] = useState<GameLevel>(defaultSettings.level)
+
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem(SETTINGS_KEY)
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings)
+      setSelectedMode(settings.mode || null)
+      setSelectedCurrency(settings.currency || null)
+      setTargetCurrency(settings.targetCurrency || null)
+      setTimerDuration(settings.timerDuration || defaultSettings.timerDuration)
+      setSelectedLevel(settings.level || defaultSettings.level)
+    }
+  }, [])
+
+  // Save settings whenever they change
+  useEffect(() => {
+    const settings = {
+      mode: selectedMode,
+      currency: selectedCurrency,
+      targetCurrency,
+      timerDuration,
+      level: selectedLevel
+    }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+  }, [selectedMode, selectedCurrency, targetCurrency, timerDuration, selectedLevel])
 
   const gameModes: { name: GameMode, icon: React.ElementType }[] = [
     { name: 'Total Count', icon: Coins },
@@ -72,7 +99,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, o
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-3 text-dark-900">Select Game Mode</h2>
+        <h2 className="text-lg font-semibold mb-3 text-dark-900">Select Mode</h2>
         <div className="grid grid-cols-2 gap-3">
           {gameModes.map(({ name, icon: Icon }) => (
             <button

@@ -3,8 +3,8 @@ import { CurrencyType } from './types/Currency'
 import { GameMode, GameSettings, GameLevel } from './types/GameTypes'
 import HomeScreen from './components/HomeScreen'
 import GameScreen from './components/GameScreen'
-import ResultScreen from './components/ResultScreen'
 import StatsScreen from './components/StatsScreen'
+import { updateStats } from './utils/statsUtils'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<'home' | 'game' | 'stats'>('home')
@@ -12,7 +12,6 @@ function App() {
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType | null>(null)
   const [targetCurrency, setTargetCurrency] = useState<CurrencyType | null>(null)
   const [gameStarted, setGameStarted] = useState(false)
-  const [gameResults, setGameResults] = useState<any | null>(null)
   const [gameSettings, setGameSettings] = useState<GameSettings>({
     timerDuration: 10,
     level: 'Easy'
@@ -40,7 +39,8 @@ function App() {
 
   const handleGameComplete = (results: any) => {
     setGameStarted(false)
-    setGameResults(results)
+    // Update statistics
+    updateStats(results)
     setCurrentScreen('home')
   }
 
@@ -54,7 +54,6 @@ function App() {
     setSelectedMode(null)
     setSelectedCurrency(null)
     setTargetCurrency(null)
-    setGameResults(null)
     setGameSettings({
       timerDuration: 10,
       level: 'Easy'
@@ -85,18 +84,11 @@ function App() {
           <GameScreen
             mode={selectedMode}
             currency={selectedCurrency}
-            targetCurrency={targetCurrency}
+            targetCurrency={targetCurrency || undefined}
             onResetGame={handleResetGame}
             onGameComplete={handleGameComplete}
             timerDuration={gameSettings.timerDuration}
             level={gameSettings.level}
-          />
-        )}
-        {gameResults && (
-          <ResultScreen 
-            results={gameResults} 
-            currency={selectedCurrency!} 
-            onRestart={handleResetGame} 
           />
         )}
       </div>
