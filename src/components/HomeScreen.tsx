@@ -54,7 +54,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings })
 
   return (
     <div className="bg-dark-400 shadow-modern rounded-large p-6 space-y-4 border border-dark-600">
-      <h1 className="text-2xl font-bold text-center text-brand-50 mb-4">Money Game</h1>
+      {/* <h1 className="text-2xl font-bold text-center text-brand-50 mb-4">Money Counter</h1> */}
 
       <div>
         <h2 className="text-lg font-semibold mb-3 text-dark-900">Select Game Mode</h2>
