@@ -62,7 +62,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartGame, defaultSettings, o
     { name: 'EUR', icon: Euro }
   ]
 
-  const timerOptions = [5, 10, 15, 30]
+  const timerOptions = [10, 15, 30, 60]
   const levels: { name: GameLevel }[] = [
     { name: 'Easy' },
     { name: 'Medium' },
